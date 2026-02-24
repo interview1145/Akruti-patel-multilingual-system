@@ -34,10 +34,6 @@ class HybridSearchEngine:
         with open("storage/bm25.pkl", "rb") as f:
             self.bm25 = pickle.load(f)
 
-    # ============================================================
-    # SEARCH FUNCTION
-    # ============================================================
-
     def search(self, query: str, top_k: int = 5):
 
         if not query.strip():
@@ -73,19 +69,14 @@ class HybridSearchEngine:
 
             template = self.metadata[idx]
 
-            # --- Semantic Score ---
             semantic_score = float(vector_scores[rank]) / semantic_max
 
-            # --- Keyword Score ---
             keyword_score = float(bm25_scores[idx]) / bm25_max
 
-            # --- Recency Score ---
             recency_score = float(compute_recency_score(template["created_at"]))
 
-            # --- Usage Score ---
             usage_score = float(compute_usage_score(template["usage_count"]))
 
-            # --- Fuzzy Title Boost ---
             fuzzy_score = (
                 fuzz.partial_ratio(
                     query.lower(),
@@ -93,10 +84,8 @@ class HybridSearchEngine:
                 ) / 100
             )
 
-            # Combine BM25 + fuzzy
             keyword_combined = keyword_score + 0.1 * fuzzy_score
 
-            # --- Final Weighted Score ---
             total_score = final_score(
                 semantic_score,
                 keyword_combined,
@@ -114,9 +103,6 @@ class HybridSearchEngine:
 
         return results
 
-    # ============================================================
-    # INCREMENTAL TEMPLATE ADDITION (NO REPROCESSING)
-    # ============================================================
 
     def add_template(self, new_template: dict):
 
@@ -133,25 +119,21 @@ class HybridSearchEngine:
             new_template["category"]
         )
 
-        # Generate embedding ONLY for new template
         new_embedding = self.model.encode([combined_text])
         new_embedding = np.array(new_embedding).astype("float32")
         faiss.normalize_L2(new_embedding)
 
-        # Add to FAISS index (no old reprocessing)
         self.index.add(new_embedding)
 
-        # Append metadata
         self.metadata.append(new_template)
 
-        # Save updated metadata
         with open("storage/metadata.json", "w") as f:
             json.dump(self.metadata, f)
 
-        # Save updated FAISS index
+        
         faiss.write_index(self.index, "storage/faiss.index")
 
-        # Rebuild BM25 (lightweight only)
+        
         tokenized_corpus = [
             (t["title"] + " " + t["description"] + " " + t["category"]).lower().split()
             for t in self.metadata
