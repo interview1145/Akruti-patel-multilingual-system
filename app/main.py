@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.search_engine import HybridSearchEngine
+from search_engine import HybridSearchEngine
 
 app = FastAPI(title="Multilingual Hybrid Ad Template Search")
 

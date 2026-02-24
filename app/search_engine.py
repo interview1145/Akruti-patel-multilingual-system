@@ -6,7 +6,10 @@ import os
 from sentence_transformers import SentenceTransformer
 from rapidfuzz import fuzz
 from rank_bm25 import BM25Okapi
-from .ranking import compute_recency_score, compute_usage_score, final_score
+try:
+    from app.ranking import compute_recency_score, compute_usage_score, final_score
+except ImportError:
+    from ranking import compute_recency_score, compute_usage_score, final_score
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
@@ -77,10 +80,10 @@ class HybridSearchEngine:
             keyword_score = float(bm25_scores[idx]) / bm25_max
 
             # --- Recency Score ---
-            recency_score = compute_recency_score(template["created_at"])
+            recency_score = float(compute_recency_score(template["created_at"]))
 
             # --- Usage Score ---
-            usage_score = compute_usage_score(template["usage_count"])
+            usage_score = float(compute_usage_score(template["usage_count"]))
 
             # --- Fuzzy Title Boost ---
             fuzzy_score = (
