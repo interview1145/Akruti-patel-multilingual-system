@@ -20,13 +20,13 @@ def build_indexes():
         for t in templates
     ]
 
-    # -------- VECTOR EMBEDDINGS --------
+
     embeddings = model.encode(texts, convert_to_numpy=True)
 
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatIP(dimension)
 
-    # Normalize for cosine similarity
+    
     faiss.normalize_L2(embeddings)
     index.add(embeddings)
 
@@ -34,14 +34,13 @@ def build_indexes():
 
     faiss.write_index(index, "storage/faiss.index")
 
-    # -------- BM25 --------
     tokenized_corpus = [text.lower().split() for text in texts]
     bm25 = BM25Okapi(tokenized_corpus)
 
     with open("storage/bm25.pkl", "wb") as f:
         pickle.dump(bm25, f)
 
-    # Save metadata
+
     with open("storage/metadata.json", "w") as f:
         json.dump(templates, f)
 

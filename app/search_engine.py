@@ -18,19 +18,17 @@ class HybridSearchEngine:
 
     def __init__(self):
 
-        # Load embedding model once
+        
         self.model = SentenceTransformer(MODEL_NAME)
 
-        # Load FAISS index
+        
         if not os.path.exists("storage/faiss.index"):
             raise ValueError("FAISS index not found. Run indexing.py first.")
         self.index = faiss.read_index("storage/faiss.index")
 
-        # Load metadata
         with open("storage/metadata.json", "r") as f:
             self.metadata = json.load(f)
 
-        # Load BM25
         with open("storage/bm25.pkl", "rb") as f:
             self.bm25 = pickle.load(f)
 
@@ -44,7 +42,6 @@ class HybridSearchEngine:
 
         top_k = min(top_k, len(self.metadata))
 
-        # ---------------- VECTOR SEARCH ----------------
         query_vector = self.model.encode([query])
         query_vector = np.array(query_vector).astype("float32")
         faiss.normalize_L2(query_vector)
@@ -52,11 +49,9 @@ class HybridSearchEngine:
         distances, indices = self.index.search(query_vector, top_k)
         vector_scores = distances[0]
 
-        # Normalize semantic scores (0 → 1)
         semantic_max = max(vector_scores) if len(vector_scores) > 0 else 1
         semantic_max = semantic_max if semantic_max != 0 else 1
 
-        # ---------------- BM25 SEARCH ----------------
         tokenized_query = query.lower().split()
         bm25_scores = self.bm25.get_scores(tokenized_query)
 
@@ -98,7 +93,7 @@ class HybridSearchEngine:
 
             results.append(template_copy)
 
-        # Final ranking
+
         results = sorted(results, key=lambda x: x["score"], reverse=True)
 
         return results
@@ -112,7 +107,7 @@ class HybridSearchEngine:
             if field not in new_template:
                 return {"error": f"Missing required field: {field}"}
 
-        # Combine text
+        
         combined_text = (
             new_template["title"] + " " +
             new_template["description"] + " " +
